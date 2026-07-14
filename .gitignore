@@ -1,0 +1,8 @@
+.gradle/
+.gradle-dist/
+/local.properties
+/gradle-*.zip
+/build/
+**/build/
+.idea/
+*.iml
