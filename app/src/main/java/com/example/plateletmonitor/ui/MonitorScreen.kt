@@ -42,7 +42,7 @@ fun MonitorScreen(
         }
         item {
             Text(
-                text = if (state.hasGsrSensor) "GSR / cEDA" else "GSR not exposed to this app",
+                text = if (state.hasGsrSensor) "GSR / cEDA · primary" else "GSR not exposed to this app",
                 style = MaterialTheme.typography.caption1,
                 textAlign = TextAlign.Center
             )
@@ -57,13 +57,13 @@ fun MonitorScreen(
         item {
             Text(
                 text = if (state.baselineComplete) {
-                    "GSR baseline ready"
+                    "GSR and pulse baseline ready"
                 } else if (state.running && state.hasGsrSensor) {
-                    "GSR baseline ${state.baselineGsrCount}/${state.baselineTarget}"
+                    "GSR ${state.baselineGsrCount}/${state.baselineTarget} · HR ${state.baselineHeartCount}/${state.baselineHeartTarget}"
                 } else if (state.running) {
                     "Waiting for GSR samples"
                 } else {
-                    "Start a session to check GSR"
+                    "Start session for baseline"
                 },
                 style = MaterialTheme.typography.body2,
                 textAlign = TextAlign.Center
@@ -71,27 +71,14 @@ fun MonitorScreen(
         }
         item {
             Text(
-                text = state.heartRateBpm?.let { "HR ${"%.0f".format(it)} bpm · context" }
-                    ?: "Heart rate unavailable",
+                text = state.heartRateBpm?.let { "Pulse ${"%.0f".format(it)} bpm" } ?: "Pulse unavailable",
                 style = MaterialTheme.typography.body2,
                 textAlign = TextAlign.Center
             )
         }
         item {
             Text(
-                text = when {
-                    !state.hasMotionSensor -> "Motion sensor unavailable"
-                    state.movementDetected == null -> "Motion: waiting for sample"
-                    state.movementDetected -> "Motion detected · context"
-                    else -> "Low motion · context"
-                },
-                style = MaterialTheme.typography.body2,
-                textAlign = TextAlign.Center
-            )
-        }
-        item {
-            Text(
-                text = "GSR samples: ${state.baselineGsrCount} · Alerts: ${state.alertsRaised}",
+                text = "GSR samples: ${state.baselineGsrCount} · Pulse samples: ${state.baselineHeartCount} · Alerts: ${state.alertsRaised}",
                 style = MaterialTheme.typography.caption2,
                 textAlign = TextAlign.Center
             )
@@ -100,12 +87,12 @@ fun MonitorScreen(
             if (state.running) {
                 Button(onClick = onStop) { Text("End session") }
             } else {
-                Button(onClick = onStart) { Text("Start GSR session") }
+                Button(onClick = onStart) { Text("Start monitoring") }
             }
         }
         item {
             Text(
-                text = "GSR is a nonspecific trend. If you feel unwell, tell clinic staff.",
+                text = "Signals show body changes, not their cause. If you feel unwell, tell clinic staff.",
                 style = MaterialTheme.typography.caption2,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 4.dp)
