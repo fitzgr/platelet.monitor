@@ -53,7 +53,7 @@ class SensorCollector(context: Context) {
                         val x = event.values.getOrNull(0) ?: 0f
                         val y = event.values.getOrNull(1) ?: 0f
                         val z = event.values.getOrNull(2) ?: 0f
-                        val acceleration = sqrt(x * x + y * y + z * z)
+                        val acceleration = sqrt((x * x + y * y + z * z).toDouble()).toFloat()
                         latestMovement = acceleration >= MOTION_THRESHOLD_METERS_PER_SECOND_SQUARED
                         motionUpdated = true
                     }
