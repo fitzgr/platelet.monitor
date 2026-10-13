@@ -13,7 +13,7 @@ data class MonitorUiState(
     val gsrMicrosiemens: Float? = null,
     val heartRateZ: Double? = null,
     val gsrZ: Double? = null,
-    val stressLikely: Boolean = false,
+    val changeDetected: Boolean = false,
     val alertsRaised: Int = 0,
     val statusMessage: String = "Ready"
 )
