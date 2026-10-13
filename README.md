@@ -17,10 +17,10 @@ GSR measures sweat-related skin conductance. It can change with stress, movement
 
 ## Build and run
 
-Open the project in Android Studio, sync Gradle, and run the app configuration on a Wear OS emulator or watch. Grant heart-rate permission; notification access is optional. Keep the monitor app open during a session in this foreground-only version. Verify cEDA sensor discovery, reading cadence, and alerts on the Pixel Watch 4 before any procedure use.
+Open the project in Android Studio, sync Gradle, and run the app configuration on a Wear OS emulator or watch. Grant body-sensor permission; notification access is optional. Keep the monitor app open during a session in this foreground-only version. Verify cEDA sensor discovery, reading cadence, and alerts on the Pixel Watch 4 before any procedure use.
 
 ## Device notes
 
 - The Pixel Watch 4 also includes optical heart rate, ECG-compatible electrical sensors, SpO2 sensors, and far-field skin temperature, among other sensors. This MVP uses heart rate only as context; additional signals should be added only through supported APIs and validated against the target watch.
-- Google Health Services provides supported health metrics such as heart rate, but its documented data types do not currently list EDA. The current direct sensor scan must be tested on the watch; Fitbit/Google Health summaries are not a substitute for live cEDA.
+- Google's current public Google Health API data-type list does not enumerate EDA. The prototype therefore relies on direct Android sensor discovery for live cEDA and must verify that path on the watch. Fitbit/Google Health synced summaries are not a substitute for live cEDA.
 - Current readings remain on the watch; this prototype does not sync to a phone or upload data.
