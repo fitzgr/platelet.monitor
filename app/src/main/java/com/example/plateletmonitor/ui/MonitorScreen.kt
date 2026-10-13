@@ -79,6 +79,18 @@ fun MonitorScreen(
         }
         item {
             Text(
+                text = when {
+                    !state.hasMotionSensor -> "Motion sensor unavailable"
+                    state.movementDetected == null -> "Motion: waiting for sample"
+                    state.movementDetected -> "Motion detected · context"
+                    else -> "Low motion · context"
+                },
+                style = MaterialTheme.typography.body2,
+                textAlign = TextAlign.Center
+            )
+        }
+        item {
+            Text(
                 text = "GSR samples: ${state.baselineGsrCount} · Alerts: ${state.alertsRaised}",
                 style = MaterialTheme.typography.caption2,
                 textAlign = TextAlign.Center
