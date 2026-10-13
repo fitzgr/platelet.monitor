@@ -3,6 +3,12 @@ package com.example.plateletmonitor.sensor
 import kotlin.math.pow
 import kotlin.math.sqrt
 
+/**
+ * Compares readings with a baseline learned for one procedure session.
+ *
+ * GSR is optional because Wear OS devices do not share a standard GSR sensor.
+ * A session can become ready from heart-rate samples alone.
+ */
 class SessionAnalyzer(
     private val baselineSampleTarget: Int = 120,
     private val stressZThreshold: Double = 1.8,
@@ -10,6 +16,11 @@ class SessionAnalyzer(
 ) {
     private val baselineHeart = mutableListOf<Double>()
     private val baselineGsr = mutableListOf<Double>()
+
+    fun reset() {
+        baselineHeart.clear()
+        baselineGsr.clear()
+    }
 
     fun ingestForBaseline(reading: SensorReading): BaselineStats {
         reading.heartRateBpm?.toDouble()?.let { baselineHeart.add(it) }
@@ -20,7 +31,8 @@ class SessionAnalyzer(
     fun currentBaseline(): BaselineStats {
         val heartStats = meanStd(baselineHeart)
         val gsrStats = meanStd(baselineGsr)
-        val complete = baselineHeart.size >= baselineSampleTarget && baselineGsr.size >= baselineSampleTarget
+        // Heart rate is the required signal. GSR is an optional corroborating signal.
+        val complete = baselineHeart.size >= baselineSampleTarget
         return BaselineStats(
             heartRateCount = baselineHeart.size,
             gsrCount = baselineGsr.size,
@@ -37,20 +49,28 @@ class SessionAnalyzer(
             (it - baseline.heartRateMean) / baseline.heartRateStd.coerceAtLeast(minStd)
         }
         val gsrZ = reading.gsrMicrosiemens?.toDouble()?.let {
-            (it - baseline.gsrMean) / baseline.gsrStd.coerceAtLeast(minStd)
+            if (baseline.gsrCount > 0) {
+                (it - baseline.gsrMean) / baseline.gsrStd.coerceAtLeast(minStd)
+            } else {
+                null
+            }
         }
 
-        val stressLikely = (hrZ != null && gsrZ != null && hrZ >= stressZThreshold && gsrZ >= stressZThreshold)
-        val reason = if (stressLikely) {
-            "Both GSR and pulse are elevated from your baseline"
+        // This is a personal-baseline cue, not a clinical or vasovagal-event detector.
+        // If GSR is available it must also be elevated; otherwise the cue uses heart rate alone.
+        val changeDetected = hrZ != null &&
+            hrZ >= stressZThreshold &&
+            (gsrZ == null || gsrZ >= stressZThreshold)
+        val reason = if (changeDetected) {
+            "Your pulse is elevated from this session's baseline"
         } else {
-            "Within expected range"
+            "No marked change from this session's baseline"
         }
 
         return DeviationResult(
             heartRateZ = hrZ,
             gsrZ = gsrZ,
-            stressLikely = stressLikely,
+            stressLikely = changeDetected,
             reason = reason
         )
     }
