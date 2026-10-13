@@ -17,6 +17,10 @@ class SensorCollector(context: Context) {
 
     fun hasGsrSensor(): Boolean = findGsrSensor() != null
 
+    fun gsrSensorDescription(): String? = findGsrSensor()?.let { sensor ->
+        "${sensor.name} · ${sensor.stringType ?: "custom sensor"}"
+    }
+
     fun readingsFlow(sampleRateMicros: Int = SensorManager.SENSOR_DELAY_NORMAL): Flow<SensorReading> = callbackFlow {
         val heartSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
         val gsrSensor = findGsrSensor()
