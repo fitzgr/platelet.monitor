@@ -24,8 +24,12 @@ class SessionAnalyzer(
     }
 
     fun ingestForBaseline(reading: SensorReading): BaselineStats {
-        reading.heartRateBpm?.toDouble()?.let { baselineHeart.add(it) }
-        reading.gsrMicrosiemens?.toDouble()?.let { baselineGsr.add(it) }
+        if (reading.heartRateUpdated) {
+            reading.heartRateBpm?.toDouble()?.let { baselineHeart.add(it) }
+        }
+        if (reading.gsrUpdated) {
+            reading.gsrMicrosiemens?.toDouble()?.let { baselineGsr.add(it) }
+        }
         return currentBaseline()
     }
 
@@ -45,15 +49,23 @@ class SessionAnalyzer(
     }
 
     fun evaluateDeviation(reading: SensorReading, baseline: BaselineStats): DeviationResult {
-        val hrZ = reading.heartRateBpm?.toDouble()?.let {
-            (it - baseline.heartRateMean) / baseline.heartRateStd.coerceAtLeast(minHeartRateStd)
-        }
-        val gsrZ = reading.gsrMicrosiemens?.toDouble()?.let {
-            if (baseline.gsrCount > 0) {
-                (it - baseline.gsrMean) / baseline.gsrStd.coerceAtLeast(minGsrStd)
-            } else {
-                null
+        val hrZ = if (reading.heartRateUpdated) {
+            reading.heartRateBpm?.toDouble()?.let {
+                (it - baseline.heartRateMean) / baseline.heartRateStd.coerceAtLeast(minHeartRateStd)
             }
+        } else {
+            null
+        }
+        val gsrZ = if (reading.gsrUpdated) {
+            reading.gsrMicrosiemens?.toDouble()?.let {
+                if (baseline.gsrCount > 0) {
+                    (it - baseline.gsrMean) / baseline.gsrStd.coerceAtLeast(minGsrStd)
+                } else {
+                    null
+                }
+            }
+        } else {
+            null
         }
 
         // cEDA/GSR changes are nonspecific; this is a trend cue, not a reaction detector.
