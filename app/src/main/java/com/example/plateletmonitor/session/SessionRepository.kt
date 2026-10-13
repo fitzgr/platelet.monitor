@@ -61,7 +61,8 @@ class SessionRepository(private val dao: SessionDao) {
                 gsrMicrosiemens = reading.gsrMicrosiemens,
                 heartRateZ = heartRateZ,
                 gsrZ = gsrZ,
-                stressLikely = stressLikely
+                stressLikely = stressLikely,
+                movementDetected = reading.movementDetected
             )
         )
     }
