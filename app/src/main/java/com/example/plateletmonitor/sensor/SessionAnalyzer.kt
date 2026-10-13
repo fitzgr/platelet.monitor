@@ -1,16 +1,16 @@
 package com.example.plateletmonitor.sensor
 
+import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.sqrt
 
 /**
- * Compares readings with a baseline learned for one procedure session.
- *
- * GSR/cEDA is the required signal for a ready state. Heart rate is retained
- * as context and is not used to infer a calcium level or a citrate reaction.
+ * Compares GSR and pulse with baselines learned for one procedure session.
+ * It reports signal changes without assigning a medical cause.
  */
 class SessionAnalyzer(
     private val baselineSampleTarget: Int = 120,
+    private val heartRateBaselineTarget: Int = 30,
     private val changeZThreshold: Double = 1.8,
     private val minHeartRateStd: Double = 3.0,
     private val minGsrStd: Double = 0.1
@@ -36,7 +36,8 @@ class SessionAnalyzer(
     fun currentBaseline(): BaselineStats {
         val heartStats = meanStd(baselineHeart)
         val gsrStats = meanStd(baselineGsr)
-        val complete = baselineGsr.size >= baselineSampleTarget
+        val complete = baselineGsr.size >= baselineSampleTarget &&
+            baselineHeart.size >= heartRateBaselineTarget
         return BaselineStats(
             heartRateCount = baselineHeart.size,
             gsrCount = baselineGsr.size,
@@ -68,18 +69,20 @@ class SessionAnalyzer(
             null
         }
 
-        // cEDA/GSR changes are nonspecific; this is a trend cue, not a reaction detector.
-        val changeDetected = gsrZ != null && gsrZ >= changeZThreshold
-        val reason = if (changeDetected) {
-            "GSR is elevated from this session's baseline"
+        val changedSignals = buildList {
+            if (gsrZ != null && abs(gsrZ) >= changeZThreshold) add("GSR")
+            if (hrZ != null && abs(hrZ) >= changeZThreshold) add("pulse")
+        }
+        val reason = if (changedSignals.isNotEmpty()) {
+            "${changedSignals.joinToString(" and ")} changed from this session's baseline"
         } else {
-            "No marked GSR change from this session's baseline"
+            "No marked GSR or pulse change from this session's baseline"
         }
 
         return DeviationResult(
             heartRateZ = hrZ,
             gsrZ = gsrZ,
-            stressLikely = changeDetected,
+            bodySignalChanged = changedSignals.isNotEmpty(),
             reason = reason
         )
     }
