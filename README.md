@@ -17,7 +17,9 @@ These sensor changes are general body-signal alerts. Skin conductance reflects s
 
 ## Build and run
 
-Open in Android Studio, sync Gradle, and run the app on a Wear OS emulator or watch. Grant body-sensor permission; notification access is optional. Keep the app open during a session in this foreground-only version. Confirm live cEDA access, pulse readings, baseline progress, and alert behavior on Pixel Watch 4 before relying on the prototype.
+A GitHub Actions workflow builds the debug APK and uploads it as the `platelet-monitor-debug-apk` artifact when the branch build succeeds. Download that artifact from the workflow run, unzip it, and sideload `app-debug.apk` onto the watch. The artifact is retained for 14 days. To build locally, open in Android Studio, sync Gradle, and run `assembleDebug`.
+
+Grant body-sensor permission; notification access is optional. Keep the app open during a session in this foreground-only version. Confirm live cEDA access, pulse readings, baseline progress, and alert behavior on Pixel Watch 4 before relying on the prototype.
 
 ## Device notes
 
