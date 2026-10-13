@@ -15,7 +15,7 @@ The alert is a personal trend cue only. It is not a medical device, does not det
 
 ## Build and run
 
-Open the project in Android Studio, sync Gradle, and run the app configuration on a Wear OS emulator or watch. Grant the requested sensor and notification permissions. Check actual sensor availability on the target watch before a procedure.
+Open the project in Android Studio, sync Gradle, and run the app configuration on a Wear OS emulator or watch. Grant heart-rate permission; notification access is optional. Keep the monitor app open during a session in this initial foreground-only version. Check actual sensor availability and sampling on the target watch before a procedure.
 
 ## Device notes
 
