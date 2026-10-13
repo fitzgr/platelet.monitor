@@ -41,18 +41,21 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun startSession() {
-        if (collectionJob != null) return
-
-        viewModelScope.launch {
-            session = repository.startSession()
-            _uiState.value = _uiState.value.copy(
-                running = true,
-                sessionId = session?.sessionId,
-                statusMessage = "Learning baseline"
-            )
-        }
+        if (collectionJob != null || !_uiState.value.hasHeartRateSensor) return
 
         collectionJob = viewModelScope.launch {
+            analyzer.reset()
+            lastAlertMs = 0
+            val activeSession = repository.startSession()
+            session = activeSession
+            _uiState.value = MonitorUiState(
+                sessionId = activeSession.sessionId,
+                running = true,
+                hasHeartRateSensor = collector.hasHeartRateSensor(),
+                hasGsrSensor = collector.hasGsrSensor(),
+                statusMessage = "Learning baseline"
+            )
+
             collector.readingsFlow(SensorManager.SENSOR_DELAY_NORMAL).collect { reading ->
                 processReading(reading)
             }
@@ -63,14 +66,16 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
         val activeSession = session ?: return
         collectionJob?.cancel()
         collectionJob = null
+        session = null
+
+        _uiState.value = _uiState.value.copy(
+            running = false,
+            statusMessage = "Session ended",
+            changeDetected = false
+        )
 
         viewModelScope.launch {
             repository.endSession(activeSession.sessionId)
-            _uiState.value = _uiState.value.copy(
-                running = false,
-                statusMessage = "Session ended"
-            )
-            session = null
         }
     }
 
@@ -104,9 +109,9 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
         if (deviation?.stressLikely == true) {
             val now = System.currentTimeMillis()
             if (now - lastAlertMs > ALERT_COOLDOWN_MS) {
-                alerts.showStressAlert(
+                alerts.showChangeAlert(
                     activeSession.sessionId,
-                    "Possible stress response. Notify medical staff now."
+                    "A reading changed from your baseline. If you feel unwell, tell clinic staff."
                 )
                 lastAlertMs = now
                 updatedSession = updatedSession?.let { repository.incrementAlert(it) }
@@ -122,11 +127,11 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
             gsrMicrosiemens = reading.gsrMicrosiemens,
             heartRateZ = deviation?.heartRateZ,
             gsrZ = deviation?.gsrZ,
-            stressLikely = deviation?.stressLikely ?: false,
+            changeDetected = deviation?.stressLikely ?: false,
             alertsRaised = updatedSession?.alertCount ?: 0,
             statusMessage = when {
                 !baseline.complete -> "Learning baseline"
-                deviation?.stressLikely == true -> "Stress pattern detected"
+                deviation?.stressLikely == true -> "Reading changed"
                 else -> "Monitoring"
             }
         )
