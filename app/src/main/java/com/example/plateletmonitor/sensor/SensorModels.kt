@@ -5,7 +5,9 @@ data class SensorReading(
     val heartRateBpm: Float?,
     val gsrMicrosiemens: Float?,
     val heartRateUpdated: Boolean = false,
-    val gsrUpdated: Boolean = false
+    val gsrUpdated: Boolean = false,
+    val movementDetected: Boolean? = null,
+    val motionUpdated: Boolean = false
 )
 
 data class BaselineStats(
