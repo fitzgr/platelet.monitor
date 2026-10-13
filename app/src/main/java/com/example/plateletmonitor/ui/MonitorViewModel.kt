@@ -110,7 +110,10 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
 
         repository.persistReading(
             sessionId = activeSession.sessionId,
-            reading = reading,
+            reading = reading.copy(
+                heartRateBpm = reading.heartRateBpm.takeIf { reading.heartRateUpdated },
+                gsrMicrosiemens = reading.gsrMicrosiemens.takeIf { reading.gsrUpdated }
+            ),
             heartRateZ = deviation?.heartRateZ,
             gsrZ = deviation?.gsrZ,
             stressLikely = deviation?.stressLikely ?: false
