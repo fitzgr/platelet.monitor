@@ -27,7 +27,13 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
     private val _uiState = MutableStateFlow(
         MonitorUiState(
             hasHeartRateSensor = collector.hasHeartRateSensor(),
-            hasGsrSensor = collector.hasGsrSensor()
+            hasGsrSensor = collector.hasGsrSensor(),
+            gsrSensorDescription = collector.gsrSensorDescription(),
+            statusMessage = if (collector.hasGsrSensor()) {
+                "Ready to check GSR"
+            } else {
+                "GSR not exposed to app"
+            }
         )
     )
     val uiState: StateFlow<MonitorUiState> = _uiState.asStateFlow()
@@ -41,7 +47,7 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun startSession() {
-        if (collectionJob != null || !_uiState.value.hasHeartRateSensor) return
+        if (collectionJob != null) return
 
         collectionJob = viewModelScope.launch {
             analyzer.reset()
@@ -53,7 +59,12 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
                 running = true,
                 hasHeartRateSensor = collector.hasHeartRateSensor(),
                 hasGsrSensor = collector.hasGsrSensor(),
-                statusMessage = "Learning baseline"
+                gsrSensorDescription = collector.gsrSensorDescription(),
+                statusMessage = if (collector.hasGsrSensor()) {
+                    "Learning GSR baseline"
+                } else {
+                    "GSR not exposed to app"
+                }
             )
 
             collector.readingsFlow(SensorManager.SENSOR_DELAY_NORMAL).collect { reading ->
@@ -111,7 +122,7 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
             if (now - lastAlertMs > ALERT_COOLDOWN_MS) {
                 alerts.showChangeAlert(
                     activeSession.sessionId,
-                    "A reading changed from your baseline. If you feel unwell, tell clinic staff."
+                    "GSR changed from your baseline. If you feel unwell, tell clinic staff."
                 )
                 lastAlertMs = now
                 updatedSession = updatedSession?.let { repository.incrementAlert(it) }
@@ -130,9 +141,10 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
             changeDetected = deviation?.stressLikely ?: false,
             alertsRaised = updatedSession?.alertCount ?: 0,
             statusMessage = when {
-                !baseline.complete -> "Learning baseline"
-                deviation?.stressLikely == true -> "Reading changed"
-                else -> "Monitoring"
+                !currentState.hasGsrSensor -> "GSR not exposed to app"
+                !baseline.complete -> "Learning GSR baseline"
+                deviation?.stressLikely == true -> "GSR changed"
+                else -> "GSR monitoring"
             }
         )
     }
