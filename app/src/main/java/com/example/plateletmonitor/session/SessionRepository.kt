@@ -51,7 +51,7 @@ class SessionRepository(private val dao: SessionDao) {
         reading: SensorReading,
         heartRateZ: Double?,
         gsrZ: Double?,
-        stressLikely: Boolean
+        bodySignalChanged: Boolean
     ) {
         dao.insertSample(
             SensorSampleEntity(
@@ -61,8 +61,7 @@ class SessionRepository(private val dao: SessionDao) {
                 gsrMicrosiemens = reading.gsrMicrosiemens,
                 heartRateZ = heartRateZ,
                 gsrZ = gsrZ,
-                stressLikely = stressLikely,
-                movementDetected = reading.movementDetected
+                bodySignalChanged = bodySignalChanged
             )
         )
     }
