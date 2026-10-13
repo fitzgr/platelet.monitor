@@ -16,5 +16,6 @@ data class SensorSampleEntity(
     val gsrMicrosiemens: Float?,
     val heartRateZ: Double?,
     val gsrZ: Double?,
-    val stressLikely: Boolean
+    val stressLikely: Boolean,
+    val movementDetected: Boolean?
 )
