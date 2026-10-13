@@ -6,12 +6,12 @@ import kotlin.math.sqrt
 /**
  * Compares readings with a baseline learned for one procedure session.
  *
- * GSR is optional because Wear OS devices do not share a standard GSR sensor.
- * A session can become ready from heart-rate samples alone.
+ * GSR/cEDA is the required signal for a ready state. Heart rate is retained
+ * as context and is not used to infer a calcium level or a citrate reaction.
  */
 class SessionAnalyzer(
     private val baselineSampleTarget: Int = 120,
-    private val stressZThreshold: Double = 1.8,
+    private val changeZThreshold: Double = 1.8,
     private val minHeartRateStd: Double = 3.0,
     private val minGsrStd: Double = 0.1
 ) {
@@ -32,8 +32,7 @@ class SessionAnalyzer(
     fun currentBaseline(): BaselineStats {
         val heartStats = meanStd(baselineHeart)
         val gsrStats = meanStd(baselineGsr)
-        // Heart rate is the required signal. GSR is an optional corroborating signal.
-        val complete = baselineHeart.size >= baselineSampleTarget
+        val complete = baselineGsr.size >= baselineSampleTarget
         return BaselineStats(
             heartRateCount = baselineHeart.size,
             gsrCount = baselineGsr.size,
@@ -57,15 +56,12 @@ class SessionAnalyzer(
             }
         }
 
-        // This is a personal-baseline cue, not a clinical or vasovagal-event detector.
-        // If GSR is available it must also be elevated; otherwise the cue uses heart rate alone.
-        val changeDetected = hrZ != null &&
-            hrZ >= stressZThreshold &&
-            (gsrZ == null || gsrZ >= stressZThreshold)
+        // cEDA/GSR changes are nonspecific; this is a trend cue, not a reaction detector.
+        val changeDetected = gsrZ != null && gsrZ >= changeZThreshold
         val reason = if (changeDetected) {
-            "Your pulse is elevated from this session's baseline"
+            "GSR is elevated from this session's baseline"
         } else {
-            "No marked change from this session's baseline"
+            "No marked GSR change from this session's baseline"
         }
 
         return DeviationResult(
