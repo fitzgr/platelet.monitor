@@ -1,7 +1,6 @@
 package com.example.plateletmonitor.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -36,35 +35,44 @@ fun MonitorScreen(
         }
         item {
             Text(
-                text = state.heartRateBpm?.let { "%.0f".format(it) } ?: "--",
+                text = state.gsrMicrosiemens?.let { "%.2f".format(it) } ?: "--",
                 style = MaterialTheme.typography.display1,
                 textAlign = TextAlign.Center
             )
         }
         item {
             Text(
-                text = if (state.hasHeartRateSensor) "BPM" else "Heart-rate sensor unavailable",
+                text = if (state.hasGsrSensor) "GSR / cEDA" else "GSR not exposed to this app",
                 style = MaterialTheme.typography.caption1,
                 textAlign = TextAlign.Center
             )
         }
         item {
             Text(
-                text = state.gsrMicrosiemens?.let { "GSR %.2f µS".format(it) }
-                    ?: if (state.hasGsrSensor) "GSR waiting for reading" else "GSR not available (optional)",
-                style = MaterialTheme.typography.body2,
+                text = state.gsrSensorDescription ?: "Sensor API entry not found",
+                style = MaterialTheme.typography.caption2,
                 textAlign = TextAlign.Center
             )
         }
         item {
             Text(
                 text = if (state.baselineComplete) {
-                    "Personal baseline ready"
-                } else if (state.running && state.hasHeartRateSensor) {
-                    "Baseline ${state.baselineHeartCount}/${state.baselineTarget}"
+                    "GSR baseline ready"
+                } else if (state.running && state.hasGsrSensor) {
+                    "GSR baseline ${state.baselineGsrCount}/${state.baselineTarget}"
+                } else if (state.running) {
+                    "Waiting for GSR samples"
                 } else {
-                    "Start a session before donating"
+                    "Start a session to check GSR"
                 },
+                style = MaterialTheme.typography.body2,
+                textAlign = TextAlign.Center
+            )
+        }
+        item {
+            Text(
+                text = state.heartRateBpm?.let { "HR ${"%.0f".format(it)} bpm · context" }
+                    ?: "Heart rate unavailable",
                 style = MaterialTheme.typography.body2,
                 textAlign = TextAlign.Center
             )
@@ -80,15 +88,12 @@ fun MonitorScreen(
             if (state.running) {
                 Button(onClick = onStop) { Text("End session") }
             } else {
-                Button(
-                    onClick = onStart,
-                    enabled = state.hasHeartRateSensor
-                ) { Text("Start session") }
+                Button(onClick = onStart) { Text("Start GSR session") }
             }
         }
         item {
             Text(
-                text = "Personal trend cue only. If you feel unwell, tell clinic staff.",
+                text = "GSR is a nonspecific trend. If you feel unwell, tell clinic staff.",
                 style = MaterialTheme.typography.caption2,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 4.dp)
