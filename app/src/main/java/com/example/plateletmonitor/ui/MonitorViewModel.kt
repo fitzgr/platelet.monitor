@@ -28,10 +28,9 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
         MonitorUiState(
             hasHeartRateSensor = collector.hasHeartRateSensor(),
             hasGsrSensor = collector.hasGsrSensor(),
-            hasMotionSensor = collector.hasMotionSensor(),
             gsrSensorDescription = collector.gsrSensorDescription(),
             statusMessage = if (collector.hasGsrSensor()) {
-                "Ready to check GSR"
+                "Ready to check body signals"
             } else {
                 "GSR not exposed to app"
             }
@@ -60,10 +59,9 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
                 running = true,
                 hasHeartRateSensor = collector.hasHeartRateSensor(),
                 hasGsrSensor = collector.hasGsrSensor(),
-                hasMotionSensor = collector.hasMotionSensor(),
                 gsrSensorDescription = collector.gsrSensorDescription(),
                 statusMessage = if (collector.hasGsrSensor()) {
-                    "Learning GSR baseline"
+                    "Learning GSR and pulse baseline"
                 } else {
                     "GSR not exposed to app"
                 }
@@ -114,21 +112,20 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
             sessionId = activeSession.sessionId,
             reading = reading.copy(
                 heartRateBpm = reading.heartRateBpm.takeIf { reading.heartRateUpdated },
-                gsrMicrosiemens = reading.gsrMicrosiemens.takeIf { reading.gsrUpdated },
-                movementDetected = reading.movementDetected.takeIf { reading.motionUpdated }
+                gsrMicrosiemens = reading.gsrMicrosiemens.takeIf { reading.gsrUpdated }
             ),
             heartRateZ = deviation?.heartRateZ,
             gsrZ = deviation?.gsrZ,
-            stressLikely = deviation?.stressLikely ?: false
+            bodySignalChanged = deviation?.bodySignalChanged ?: false
         )
 
         var updatedSession = session
-        if (deviation?.stressLikely == true) {
+        if (deviation?.bodySignalChanged == true) {
             val now = System.currentTimeMillis()
             if (now - lastAlertMs > ALERT_COOLDOWN_MS) {
                 alerts.showChangeAlert(
                     activeSession.sessionId,
-                    "GSR changed from your baseline. If you feel unwell, tell clinic staff."
+                    "${deviation.reason}. If you feel unwell, tell clinic staff."
                 )
                 lastAlertMs = now
                 updatedSession = updatedSession?.let { repository.incrementAlert(it) }
@@ -142,16 +139,15 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
             baselineGsrCount = baseline.gsrCount,
             heartRateBpm = reading.heartRateBpm,
             gsrMicrosiemens = reading.gsrMicrosiemens,
-            movementDetected = if (reading.motionUpdated) reading.movementDetected else currentState.movementDetected,
-            heartRateZ = deviation?.heartRateZ,
-            gsrZ = deviation?.gsrZ,
-            changeDetected = deviation?.stressLikely ?: false,
+            heartRateZ = deviation?.heartRateZ ?: currentState.heartRateZ,
+            gsrZ = deviation?.gsrZ ?: currentState.gsrZ,
+            changeDetected = deviation?.bodySignalChanged ?: false,
             alertsRaised = updatedSession?.alertCount ?: 0,
             statusMessage = when {
                 !currentState.hasGsrSensor -> "GSR not exposed to app"
-                !baseline.complete -> "Learning GSR baseline"
-                deviation?.stressLikely == true -> "GSR changed"
-                else -> "GSR monitoring"
+                !baseline.complete -> "Learning GSR and pulse baseline"
+                deviation?.bodySignalChanged == true -> "Body signal changed"
+                else -> "Monitoring GSR and pulse"
             }
         )
     }
