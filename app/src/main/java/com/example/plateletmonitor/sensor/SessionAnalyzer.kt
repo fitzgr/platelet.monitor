@@ -12,7 +12,8 @@ import kotlin.math.sqrt
 class SessionAnalyzer(
     private val baselineSampleTarget: Int = 120,
     private val stressZThreshold: Double = 1.8,
-    private val minStd: Double = 0.1
+    private val minHeartRateStd: Double = 3.0,
+    private val minGsrStd: Double = 0.1
 ) {
     private val baselineHeart = mutableListOf<Double>()
     private val baselineGsr = mutableListOf<Double>()
@@ -46,11 +47,11 @@ class SessionAnalyzer(
 
     fun evaluateDeviation(reading: SensorReading, baseline: BaselineStats): DeviationResult {
         val hrZ = reading.heartRateBpm?.toDouble()?.let {
-            (it - baseline.heartRateMean) / baseline.heartRateStd.coerceAtLeast(minStd)
+            (it - baseline.heartRateMean) / baseline.heartRateStd.coerceAtLeast(minHeartRateStd)
         }
         val gsrZ = reading.gsrMicrosiemens?.toDouble()?.let {
             if (baseline.gsrCount > 0) {
-                (it - baseline.gsrMean) / baseline.gsrStd.coerceAtLeast(minStd)
+                (it - baseline.gsrMean) / baseline.gsrStd.coerceAtLeast(minGsrStd)
             } else {
                 null
             }
