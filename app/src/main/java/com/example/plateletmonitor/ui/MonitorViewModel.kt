@@ -28,6 +28,7 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
         MonitorUiState(
             hasHeartRateSensor = collector.hasHeartRateSensor(),
             hasGsrSensor = collector.hasGsrSensor(),
+            hasMotionSensor = collector.hasMotionSensor(),
             gsrSensorDescription = collector.gsrSensorDescription(),
             statusMessage = if (collector.hasGsrSensor()) {
                 "Ready to check GSR"
@@ -59,6 +60,7 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
                 running = true,
                 hasHeartRateSensor = collector.hasHeartRateSensor(),
                 hasGsrSensor = collector.hasGsrSensor(),
+                hasMotionSensor = collector.hasMotionSensor(),
                 gsrSensorDescription = collector.gsrSensorDescription(),
                 statusMessage = if (collector.hasGsrSensor()) {
                     "Learning GSR baseline"
@@ -112,7 +114,8 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
             sessionId = activeSession.sessionId,
             reading = reading.copy(
                 heartRateBpm = reading.heartRateBpm.takeIf { reading.heartRateUpdated },
-                gsrMicrosiemens = reading.gsrMicrosiemens.takeIf { reading.gsrUpdated }
+                gsrMicrosiemens = reading.gsrMicrosiemens.takeIf { reading.gsrUpdated },
+                movementDetected = reading.movementDetected.takeIf { reading.motionUpdated }
             ),
             heartRateZ = deviation?.heartRateZ,
             gsrZ = deviation?.gsrZ,
@@ -139,6 +142,7 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
             baselineGsrCount = baseline.gsrCount,
             heartRateBpm = reading.heartRateBpm,
             gsrMicrosiemens = reading.gsrMicrosiemens,
+            movementDetected = if (reading.motionUpdated) reading.movementDetected else currentState.movementDetected,
             heartRateZ = deviation?.heartRateZ,
             gsrZ = deviation?.gsrZ,
             changeDetected = deviation?.stressLikely ?: false,
