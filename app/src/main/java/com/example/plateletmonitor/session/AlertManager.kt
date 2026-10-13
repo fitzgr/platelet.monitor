@@ -19,7 +19,7 @@ class AlertManager(private val context: Context) {
                 "Procedure Monitor Alerts",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "A cue when a reading changes from your personal session baseline"
+                description = "A cue when GSR changes from the personal session baseline"
             }
             notificationManager.createNotificationChannel(channel)
         }
@@ -28,7 +28,7 @@ class AlertManager(private val context: Context) {
     fun showChangeAlert(sessionId: String, message: String) {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_error)
-            .setContentTitle("Reading changed")
+            .setContentTitle("GSR changed")
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
