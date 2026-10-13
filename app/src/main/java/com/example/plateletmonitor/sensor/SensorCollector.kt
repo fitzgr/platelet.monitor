@@ -30,14 +30,17 @@ class SensorCollector(context: Context) {
 
         val listener = object : SensorEventListener {
             override fun onSensorChanged(event: SensorEvent) {
-                when (event.sensor.type) {
-                    Sensor.TYPE_HEART_RATE -> {
+                var heartRateUpdated = false
+                var gsrUpdated = false
+
+                when {
+                    event.sensor.type == Sensor.TYPE_HEART_RATE -> {
                         latestHeartRate = event.values.firstOrNull()
+                        heartRateUpdated = true
                     }
-                    else -> {
-                        if (isLikelyGsrSensor(event.sensor)) {
-                            latestGsr = event.values.firstOrNull()
-                        }
+                    isLikelyGsrSensor(event.sensor) -> {
+                        latestGsr = event.values.firstOrNull()
+                        gsrUpdated = true
                     }
                 }
 
@@ -45,7 +48,9 @@ class SensorCollector(context: Context) {
                     SensorReading(
                         timestampEpochMs = System.currentTimeMillis(),
                         heartRateBpm = latestHeartRate,
-                        gsrMicrosiemens = latestGsr
+                        gsrMicrosiemens = latestGsr,
+                        heartRateUpdated = heartRateUpdated,
+                        gsrUpdated = gsrUpdated
                     )
                 )
             }
