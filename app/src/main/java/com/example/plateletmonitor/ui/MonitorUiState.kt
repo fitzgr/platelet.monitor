@@ -5,6 +5,7 @@ data class MonitorUiState(
     val running: Boolean = false,
     val hasHeartRateSensor: Boolean = false,
     val hasGsrSensor: Boolean = false,
+    val gsrSensorDescription: String? = null,
     val baselineComplete: Boolean = false,
     val baselineHeartCount: Int = 0,
     val baselineGsrCount: Int = 0,
