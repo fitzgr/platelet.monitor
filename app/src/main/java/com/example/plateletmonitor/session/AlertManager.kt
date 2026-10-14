@@ -16,22 +16,22 @@ class AlertManager(private val context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Donor Safety Alerts",
+                "Procedure Monitor Alerts",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Alerts when GSR and pulse deviate from baseline"
+                description = "A cue when GSR or pulse changes from the session baseline"
             }
             notificationManager.createNotificationChannel(channel)
         }
     }
 
-    fun showStressAlert(sessionId: String, message: String) {
+    fun showChangeAlert(sessionId: String, message: String) {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_error)
-            .setContentTitle("Stress pattern detected")
+            .setContentTitle("Body signal changed")
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setAutoCancel(true)
             .build()
 
@@ -50,6 +50,6 @@ class AlertManager(private val context: Context) {
     }
 
     companion object {
-        const val CHANNEL_ID = "stress-alerts"
+        const val CHANNEL_ID = "procedure-monitor-alerts"
     }
 }

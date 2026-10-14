@@ -1,26 +1,43 @@
 package com.example.plateletmonitor.sensor
 
+import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.sqrt
 
+/**
+ * Compares GSR and pulse with baselines learned for one procedure session.
+ * It reports signal changes without assigning a medical cause.
+ */
 class SessionAnalyzer(
     private val baselineSampleTarget: Int = 120,
-    private val stressZThreshold: Double = 1.8,
-    private val minStd: Double = 0.1
+    private val heartRateBaselineTarget: Int = 30,
+    private val changeZThreshold: Double = 1.8,
+    private val minHeartRateStd: Double = 3.0,
+    private val minGsrStd: Double = 0.1
 ) {
     private val baselineHeart = mutableListOf<Double>()
     private val baselineGsr = mutableListOf<Double>()
 
+    fun reset() {
+        baselineHeart.clear()
+        baselineGsr.clear()
+    }
+
     fun ingestForBaseline(reading: SensorReading): BaselineStats {
-        reading.heartRateBpm?.toDouble()?.let { baselineHeart.add(it) }
-        reading.gsrMicrosiemens?.toDouble()?.let { baselineGsr.add(it) }
+        if (reading.heartRateUpdated) {
+            reading.heartRateBpm?.toDouble()?.let { baselineHeart.add(it) }
+        }
+        if (reading.gsrUpdated) {
+            reading.gsrMicrosiemens?.toDouble()?.let { baselineGsr.add(it) }
+        }
         return currentBaseline()
     }
 
     fun currentBaseline(): BaselineStats {
         val heartStats = meanStd(baselineHeart)
         val gsrStats = meanStd(baselineGsr)
-        val complete = baselineHeart.size >= baselineSampleTarget && baselineGsr.size >= baselineSampleTarget
+        val complete = baselineGsr.size >= baselineSampleTarget &&
+            baselineHeart.size >= heartRateBaselineTarget
         return BaselineStats(
             heartRateCount = baselineHeart.size,
             gsrCount = baselineGsr.size,
@@ -33,24 +50,39 @@ class SessionAnalyzer(
     }
 
     fun evaluateDeviation(reading: SensorReading, baseline: BaselineStats): DeviationResult {
-        val hrZ = reading.heartRateBpm?.toDouble()?.let {
-            (it - baseline.heartRateMean) / baseline.heartRateStd.coerceAtLeast(minStd)
+        val hrZ = if (reading.heartRateUpdated) {
+            reading.heartRateBpm?.toDouble()?.let {
+                (it - baseline.heartRateMean) / baseline.heartRateStd.coerceAtLeast(minHeartRateStd)
+            }
+        } else {
+            null
         }
-        val gsrZ = reading.gsrMicrosiemens?.toDouble()?.let {
-            (it - baseline.gsrMean) / baseline.gsrStd.coerceAtLeast(minStd)
+        val gsrZ = if (reading.gsrUpdated) {
+            reading.gsrMicrosiemens?.toDouble()?.let {
+                if (baseline.gsrCount > 0) {
+                    (it - baseline.gsrMean) / baseline.gsrStd.coerceAtLeast(minGsrStd)
+                } else {
+                    null
+                }
+            }
+        } else {
+            null
         }
 
-        val stressLikely = (hrZ != null && gsrZ != null && hrZ >= stressZThreshold && gsrZ >= stressZThreshold)
-        val reason = if (stressLikely) {
-            "Both GSR and pulse are elevated from your baseline"
+        val changedSignals = buildList {
+            if (gsrZ != null && abs(gsrZ) >= changeZThreshold) add("GSR")
+            if (hrZ != null && abs(hrZ) >= changeZThreshold) add("pulse")
+        }
+        val reason = if (changedSignals.isNotEmpty()) {
+            "${changedSignals.joinToString(" and ")} changed from this session's baseline"
         } else {
-            "Within expected range"
+            "No marked GSR or pulse change from this session's baseline"
         }
 
         return DeviationResult(
             heartRateZ = hrZ,
             gsrZ = gsrZ,
-            stressLikely = stressLikely,
+            bodySignalChanged = changedSignals.isNotEmpty(),
             reason = reason
         )
     }

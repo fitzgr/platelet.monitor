@@ -1,5 +1,6 @@
 package com.example.plateletmonitor.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -16,5 +17,5 @@ data class SensorSampleEntity(
     val gsrMicrosiemens: Float?,
     val heartRateZ: Double?,
     val gsrZ: Double?,
-    val stressLikely: Boolean
+    @ColumnInfo(name = "stressLikely") val bodySignalChanged: Boolean
 )

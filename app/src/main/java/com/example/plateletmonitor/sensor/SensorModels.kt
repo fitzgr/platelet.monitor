@@ -3,7 +3,9 @@ package com.example.plateletmonitor.sensor
 data class SensorReading(
     val timestampEpochMs: Long,
     val heartRateBpm: Float?,
-    val gsrMicrosiemens: Float?
+    val gsrMicrosiemens: Float?,
+    val heartRateUpdated: Boolean = false,
+    val gsrUpdated: Boolean = false
 )
 
 data class BaselineStats(
@@ -19,6 +21,6 @@ data class BaselineStats(
 data class DeviationResult(
     val heartRateZ: Double?,
     val gsrZ: Double?,
-    val stressLikely: Boolean,
+    val bodySignalChanged: Boolean,
     val reason: String
 )
