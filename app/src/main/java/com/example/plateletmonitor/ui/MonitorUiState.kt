@@ -1,5 +1,10 @@
 package com.example.plateletmonitor.ui
 
+data class SignalPoint(
+    val timestampEpochMs: Long,
+    val value: Float
+)
+
 data class MonitorUiState(
     val sessionId: String? = null,
     val running: Boolean = false,
@@ -13,6 +18,8 @@ data class MonitorUiState(
     val baselineTarget: Int = 120,
     val heartRateBpm: Float? = null,
     val gsrMicrosiemens: Float? = null,
+    val gsrHistory: List<SignalPoint> = emptyList(),
+    val pulseHistory: List<SignalPoint> = emptyList(),
     val heartRateZ: Double? = null,
     val gsrZ: Double? = null,
     val changeDetected: Boolean = false,

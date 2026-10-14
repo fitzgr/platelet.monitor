@@ -35,14 +35,18 @@ fun MonitorScreen(
         }
         item {
             Text(
-                text = state.gsrMicrosiemens?.let { "%.2f".format(it) } ?: "--",
+                text = state.gsrMicrosiemens?.let { "%.2f".format(it) } ?: "—",
                 style = MaterialTheme.typography.display1,
                 textAlign = TextAlign.Center
             )
         }
         item {
             Text(
-                text = if (state.hasGsrSensor) "GSR / cEDA · primary" else "GSR not exposed to this app",
+                text = when {
+                    state.gsrMicrosiemens != null -> "GSR / cEDA · μS"
+                    state.hasGsrSensor -> "GSR / cEDA · waiting for data"
+                    else -> "GSR not exposed to this app"
+                },
                 style = MaterialTheme.typography.caption1,
                 textAlign = TextAlign.Center
             )
@@ -56,14 +60,12 @@ fun MonitorScreen(
         }
         item {
             Text(
-                text = if (state.baselineComplete) {
-                    "GSR and pulse baseline ready"
-                } else if (state.running && state.hasGsrSensor) {
-                    "GSR ${state.baselineGsrCount}/${state.baselineTarget} · HR ${state.baselineHeartCount}/${state.baselineHeartTarget}"
-                } else if (state.running) {
-                    "Waiting for GSR samples"
-                } else {
-                    "Start session for baseline"
+                text = when {
+                    state.baselineComplete -> "GSR and pulse baseline ready"
+                    !state.running -> "Start session for baseline"
+                    !state.hasGsrSensor -> "GSR unavailable · pulse ${state.baselineHeartCount}/${state.baselineHeartTarget}"
+                    state.baselineGsrCount == 0 -> "Waiting for GSR · 0/${state.baselineTarget} · Pulse ${state.baselineHeartCount}/${state.baselineHeartTarget}"
+                    else -> "GSR ${state.baselineGsrCount}/${state.baselineTarget} · Pulse ${state.baselineHeartCount}/${state.baselineHeartTarget}"
                 },
                 style = MaterialTheme.typography.body2,
                 textAlign = TextAlign.Center
@@ -77,6 +79,13 @@ fun MonitorScreen(
             )
         }
         item {
+            SignalTrendChart(
+                gsrHistory = state.gsrHistory,
+                pulseHistory = state.pulseHistory,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
+        item {
             Text(
                 text = "GSR samples: ${state.baselineGsrCount} · Pulse samples: ${state.baselineHeartCount} · Alerts: ${state.alertsRaised}",
                 style = MaterialTheme.typography.caption2,
@@ -84,11 +93,8 @@ fun MonitorScreen(
             )
         }
         item {
-            if (state.running) {
-                Button(onClick = onStop) { Text("End session") }
-            } else {
-                Button(onClick = onStart) { Text("Start monitoring") }
-            }
+            if (state.running) Button(onClick = onStop) { Text("End session") }
+            else Button(onClick = onStart) { Text("Start monitoring") }
         }
         item {
             Text(

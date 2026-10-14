@@ -61,7 +61,7 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
                 hasGsrSensor = collector.hasGsrSensor(),
                 gsrSensorDescription = collector.gsrSensorDescription(),
                 statusMessage = if (collector.hasGsrSensor()) {
-                    "Learning GSR and pulse baseline"
+                    "Waiting for live GSR readings"
                 } else {
                     "GSR not exposed to app"
                 }
@@ -78,13 +78,11 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
         collectionJob?.cancel()
         collectionJob = null
         session = null
-
         _uiState.value = _uiState.value.copy(
             running = false,
             statusMessage = "Session ended",
             changeDetected = false
         )
-
         viewModelScope.launch {
             repository.endSession(activeSession.sessionId)
         }
@@ -93,21 +91,14 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
     private suspend fun processReading(reading: SensorReading) {
         val activeSession = session ?: return
         val currentState = _uiState.value
-
         val baseline: BaselineStats = if (!currentState.baselineComplete) {
             analyzer.ingestForBaseline(reading)
         } else {
             analyzer.currentBaseline()
         }
-
         session = repository.saveBaseline(activeSession, baseline)
 
-        val deviation = if (baseline.complete) {
-            analyzer.evaluateDeviation(reading, baseline)
-        } else {
-            null
-        }
-
+        val deviation = if (baseline.complete) analyzer.evaluateDeviation(reading, baseline) else null
         repository.persistReading(
             sessionId = activeSession.sessionId,
             reading = reading.copy(
@@ -118,6 +109,15 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
             gsrZ = deviation?.gsrZ,
             bodySignalChanged = deviation?.bodySignalChanged ?: false
         )
+
+        val gsrHistory = if (reading.gsrUpdated && reading.gsrMicrosiemens != null) {
+            (currentState.gsrHistory + SignalPoint(reading.timestampEpochMs, reading.gsrMicrosiemens))
+                .takeLast(MAX_CHART_POINTS)
+        } else currentState.gsrHistory
+        val pulseHistory = if (reading.heartRateUpdated && reading.heartRateBpm != null) {
+            (currentState.pulseHistory + SignalPoint(reading.timestampEpochMs, reading.heartRateBpm))
+                .takeLast(MAX_CHART_POINTS)
+        } else currentState.pulseHistory
 
         var updatedSession = session
         if (deviation?.bodySignalChanged == true) {
@@ -139,12 +139,15 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
             baselineGsrCount = baseline.gsrCount,
             heartRateBpm = reading.heartRateBpm,
             gsrMicrosiemens = reading.gsrMicrosiemens,
+            gsrHistory = gsrHistory,
+            pulseHistory = pulseHistory,
             heartRateZ = deviation?.heartRateZ ?: currentState.heartRateZ,
             gsrZ = deviation?.gsrZ ?: currentState.gsrZ,
             changeDetected = deviation?.bodySignalChanged ?: false,
             alertsRaised = updatedSession?.alertCount ?: 0,
             statusMessage = when {
                 !currentState.hasGsrSensor -> "GSR not exposed to app"
+                baseline.gsrCount == 0 -> "Waiting for live GSR readings"
                 !baseline.complete -> "Learning GSR and pulse baseline"
                 deviation?.bodySignalChanged == true -> "Body signal changed"
                 else -> "Monitoring GSR and pulse"
@@ -154,5 +157,6 @@ class MonitorViewModel(application: Application) : AndroidViewModel(application)
 
     companion object {
         private const val ALERT_COOLDOWN_MS = 60_000L
+        private const val MAX_CHART_POINTS = 60
     }
 }
